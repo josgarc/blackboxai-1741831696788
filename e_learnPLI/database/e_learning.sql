@@ -6,14 +6,29 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+--
+-- Base de datos: `e_learning`
+--
+
+-- --------------------------------------------------------
 
 --
--- Base de datos: `building_bridges`
+-- Estructura de tabla para la tabla `users`
 --
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `full_Name` varchar(255) NOT NULL,
+  `role` enum('Administrador','Maestro','Estudiante') NOT NULL,
+  `status` enum('activo','inactivo') NOT NULL DEFAULT 'activo',
+  `phone` varchar(20) DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `country` varchar(2) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -22,16 +37,14 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `materias` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `codigo` varchar(10) NOT NULL,
+  `id` int(11) NOT NULL,
+  `codigo` varchar(20) NOT NULL,
   `nombre` varchar(255) NOT NULL,
   `descripcion` text DEFAULT NULL,
-  `creditos` int(11) DEFAULT 0,
-  `estado` enum('activo','inactivo') DEFAULT 'activo',
+  `creditos` int(11) NOT NULL DEFAULT 0,
+  `estado` enum('activo','inactivo') NOT NULL DEFAULT 'activo',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `codigo` (`codigo`)
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -41,16 +54,11 @@ CREATE TABLE `materias` (
 --
 
 CREATE TABLE `maestros_materias` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `materia_id` int(11) NOT NULL,
-  `fecha_asignacion` timestamp NOT NULL DEFAULT current_timestamp(),
-  `estado` enum('activo','inactivo') DEFAULT 'activo',
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `materia_id` (`materia_id`),
-  CONSTRAINT `fk_maestros_materias_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_maestros_materias_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE
+  `estado` enum('activo','inactivo') NOT NULL DEFAULT 'activo',
+  `fecha_asignacion` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -60,17 +68,28 @@ CREATE TABLE `maestros_materias` (
 --
 
 CREATE TABLE `estudiantes_materias` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `materia_id` int(11) NOT NULL,
+  `estado` enum('inscrito','baja') NOT NULL DEFAULT 'inscrito',
   `fecha_inscripcion` timestamp NOT NULL DEFAULT current_timestamp(),
-  `estado` enum('inscrito','retirado','completado') DEFAULT 'inscrito',
-  `nota_final` decimal(5,2) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  KEY `materia_id` (`materia_id`),
-  CONSTRAINT `fk_estudiantes_materias_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_estudiantes_materias_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE
+  `fecha_baja` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `temas`
+--
+
+CREATE TABLE `temas` (
+  `id` int(11) NOT NULL,
+  `materia_id` int(11) NOT NULL,
+  `titulo` varchar(255) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `orden` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -80,21 +99,15 @@ CREATE TABLE `estudiantes_materias` (
 --
 
 CREATE TABLE `contenidos` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `materia_id` int(11) NOT NULL,
+  `id` int(11) NOT NULL,
+  `tema_id` int(11) NOT NULL,
   `titulo` varchar(255) NOT NULL,
-  `descripcion` text DEFAULT NULL,
-  `tipo` enum('pdf','video','texto','link_zoom','otro') NOT NULL,
-  `url` text DEFAULT NULL,
+  `tipo` enum('documento','video','enlace','texto') NOT NULL,
+  `contenido` text DEFAULT NULL,
   `archivo` varchar(255) DEFAULT NULL,
-  `contenido` longtext DEFAULT NULL,
-  `orden` int(11) DEFAULT 0,
-  `estado` enum('borrador','publicado','archivado') DEFAULT 'borrador',
+  `orden` int(11) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `materia_id` (`materia_id`),
-  CONSTRAINT `fk_contenidos_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -104,19 +117,17 @@ CREATE TABLE `contenidos` (
 --
 
 CREATE TABLE `tareas` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `materia_id` int(11) NOT NULL,
   `titulo` varchar(255) NOT NULL,
   `descripcion` text DEFAULT NULL,
-  `fecha_inicio` datetime NOT NULL,
   `fecha_entrega` datetime NOT NULL,
-  `ponderacion` decimal(5,2) DEFAULT 0.00,
-  `tipo_entrega` enum('archivo','texto','ambos') DEFAULT 'archivo',
-  `estado` enum('borrador','publicada','cerrada') DEFAULT 'borrador',
+  `puntaje_maximo` decimal(5,2) NOT NULL DEFAULT 100.00,
+  `permitir_entrega_tarde` tinyint(1) NOT NULL DEFAULT 0,
+  `archivo_adjunto` varchar(255) DEFAULT NULL,
+  `estado` enum('borrador','publicada','cerrada') NOT NULL DEFAULT 'borrador',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `materia_id` (`materia_id`),
-  CONSTRAINT `fk_tareas_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -126,20 +137,16 @@ CREATE TABLE `tareas` (
 --
 
 CREATE TABLE `entregas_tareas` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `tarea_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `contenido` text DEFAULT NULL,
   `archivo` varchar(255) DEFAULT NULL,
-  `fecha_entrega` timestamp NOT NULL DEFAULT current_timestamp(),
+  `comentario` text DEFAULT NULL,
   `calificacion` decimal(5,2) DEFAULT NULL,
-  `comentario_profesor` text DEFAULT NULL,
-  `estado` enum('entregado','calificado','retrasado') DEFAULT 'entregado',
-  PRIMARY KEY (`id`),
-  KEY `tarea_id` (`tarea_id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `fk_entregas_tarea` FOREIGN KEY (`tarea_id`) REFERENCES `tareas` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_entregas_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  `retroalimentacion` text DEFAULT NULL,
+  `fecha_entrega` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_calificacion` timestamp NULL DEFAULT NULL,
+  `estado` enum('entregado','calificado') NOT NULL DEFAULT 'entregado'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -149,40 +156,46 @@ CREATE TABLE `entregas_tareas` (
 --
 
 CREATE TABLE `examenes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `materia_id` int(11) NOT NULL,
   `titulo` varchar(255) NOT NULL,
   `descripcion` text DEFAULT NULL,
   `fecha_inicio` datetime NOT NULL,
   `fecha_fin` datetime NOT NULL,
-  `duracion_minutos` int(11) DEFAULT 60,
-  `ponderacion` decimal(5,2) DEFAULT 0.00,
-  `intentos_permitidos` int(11) DEFAULT 1,
-  `estado` enum('borrador','publicado','cerrado') DEFAULT 'borrador',
+  `duracion` int(11) NOT NULL DEFAULT 60,
+  `intentos_permitidos` int(11) NOT NULL DEFAULT 1,
+  `puntaje_aprobatorio` decimal(5,2) NOT NULL DEFAULT 60.00,
+  `estado` enum('borrador','publicado','cerrado') NOT NULL DEFAULT 'borrador',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `materia_id` (`materia_id`),
-  CONSTRAINT `fk_examenes_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `preguntas`
+-- Estructura de tabla para la tabla `preguntas_examen`
 --
 
-CREATE TABLE `preguntas` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `preguntas_examen` (
+  `id` int(11) NOT NULL,
   `examen_id` int(11) NOT NULL,
-  `tipo` enum('multiple','abierta','fecha','lista','seleccion_multiple','texto') NOT NULL,
   `pregunta` text NOT NULL,
-  `opciones` json DEFAULT NULL,
-  `respuesta_correcta` text DEFAULT NULL,
-  `puntaje` decimal(5,2) DEFAULT 0.00,
-  `orden` int(11) DEFAULT 0,
-  PRIMARY KEY (`id`),
-  KEY `examen_id` (`examen_id`),
-  CONSTRAINT `fk_preguntas_examen` FOREIGN KEY (`examen_id`) REFERENCES `examenes` (`id`) ON DELETE CASCADE
+  `tipo` enum('multiple','abierta','verdadero_falso') NOT NULL,
+  `puntaje` decimal(5,2) NOT NULL DEFAULT 10.00,
+  `orden` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `opciones_pregunta`
+--
+
+CREATE TABLE `opciones_pregunta` (
+  `id` int(11) NOT NULL,
+  `pregunta_id` int(11) NOT NULL,
+  `opcion` text NOT NULL,
+  `es_correcta` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -192,99 +205,27 @@ CREATE TABLE `preguntas` (
 --
 
 CREATE TABLE `respuestas_examenes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `examen_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
+  `fecha_inicio` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_fin` timestamp NULL DEFAULT NULL,
+  `puntaje_obtenido` decimal(5,2) DEFAULT NULL,
+  `intento_numero` int(11) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `respuestas_preguntas`
+--
+
+CREATE TABLE `respuestas_preguntas` (
+  `id` int(11) NOT NULL,
+  `respuesta_examen_id` int(11) NOT NULL,
   `pregunta_id` int(11) NOT NULL,
   `respuesta` text DEFAULT NULL,
-  `es_correcta` tinyint(1) DEFAULT NULL,
-  `puntaje_obtenido` decimal(5,2) DEFAULT 0.00,
-  `fecha_respuesta` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `examen_id` (`examen_id`),
-  KEY `user_id` (`user_id`),
-  KEY `pregunta_id` (`pregunta_id`),
-  CONSTRAINT `fk_respuestas_examen` FOREIGN KEY (`examen_id`) REFERENCES `examenes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_respuestas_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_respuestas_pregunta` FOREIGN KEY (`pregunta_id`) REFERENCES `preguntas` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `asistencias`
---
-
-CREATE TABLE `asistencias` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `materia_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `fecha_clase` date NOT NULL,
-  `estado` enum('presente','ausente','tardanza') DEFAULT 'ausente',
-  `zoom_meeting_id` varchar(255) DEFAULT NULL,
-  `tiempo_conexion` int(11) DEFAULT NULL COMMENT 'Tiempo en minutos',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `materia_id` (`materia_id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `fk_asistencias_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_asistencias_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `notificaciones`
---
-
-CREATE TABLE `notificaciones` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `tipo` enum('tarea','examen','contenido','calificacion','sistema') NOT NULL,
-  `titulo` varchar(255) NOT NULL,
-  `mensaje` text NOT NULL,
-  `leido` tinyint(1) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `fk_notificaciones_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `configuraciones`
---
-
-CREATE TABLE `configuraciones` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `clave` varchar(50) NOT NULL,
-  `valor` text DEFAULT NULL,
-  `descripcion` text DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `clave` (`clave`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `archivos`
---
-
-CREATE TABLE `archivos` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nombre_original` varchar(255) NOT NULL,
-  `nombre_sistema` varchar(255) NOT NULL,
-  `ruta` varchar(255) NOT NULL,
-  `tipo` varchar(100) NOT NULL,
-  `tamano` int(11) NOT NULL,
-  `extension` varchar(10) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `user_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `fk_archivos_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  `es_correcta` tinyint(1) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -294,41 +235,295 @@ CREATE TABLE `archivos` (
 --
 
 CREATE TABLE `zoom_meetings` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `materia_id` int(11) NOT NULL,
   `meeting_id` varchar(255) NOT NULL,
   `topic` varchar(255) NOT NULL,
   `start_time` datetime NOT NULL,
-  `duration` int(11) NOT NULL COMMENT 'Duración en minutos',
+  `duration` int(11) NOT NULL DEFAULT 60,
   `join_url` text NOT NULL,
-  `password` varchar(50) DEFAULT NULL,
-  `estado` enum('programada','en_curso','finalizada','cancelada') DEFAULT 'programada',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `materia_id` (`materia_id`),
-  CONSTRAINT `fk_zoom_meetings_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE
+  `start_url` text NOT NULL,
+  `estado` enum('programada','en_curso','finalizada','cancelada') NOT NULL DEFAULT 'programada',
+  `descripcion` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Datos de ejemplo para la tabla `configuraciones`
+-- Índices para tablas volcadas
 --
 
-INSERT INTO `configuraciones` (`clave`, `valor`, `descripcion`) VALUES
-('sistema_nombre', 'E-Learning PLI', 'Nombre del sistema'),
-('sistema_version', '1.0.0', 'Versión actual del sistema'),
-('zoom_api_key', '', 'API Key de Zoom'),
-('zoom_api_secret', '', 'API Secret de Zoom'),
-('smtp_host', 'smtp.hostinger.com', 'Servidor SMTP'),
-('smtp_port', '465', 'Puerto SMTP'),
-('smtp_user', 'notificaciones@buildingbridgesrn.org', 'Usuario SMTP'),
-('smtp_password', '', 'Contraseña SMTP'),
-('max_file_size', '10485760', 'Tamaño máximo de archivo en bytes (10MB)'),
-('allowed_extensions', 'jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar', 'Extensiones de archivo permitidas');
+--
+-- Indices de la tabla `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indices de la tabla `materias`
+--
+ALTER TABLE `materias`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `codigo` (`codigo`);
+
+--
+-- Indices de la tabla `maestros_materias`
+--
+ALTER TABLE `maestros_materias`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_materia` (`user_id`,`materia_id`),
+  ADD KEY `materia_id` (`materia_id`);
+
+--
+-- Indices de la tabla `estudiantes_materias`
+--
+ALTER TABLE `estudiantes_materias`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_materia` (`user_id`,`materia_id`),
+  ADD KEY `materia_id` (`materia_id`);
+
+--
+-- Indices de la tabla `temas`
+--
+ALTER TABLE `temas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `materia_id` (`materia_id`);
+
+--
+-- Indices de la tabla `contenidos`
+--
+ALTER TABLE `contenidos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `tema_id` (`tema_id`);
+
+--
+-- Indices de la tabla `tareas`
+--
+ALTER TABLE `tareas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `materia_id` (`materia_id`);
+
+--
+-- Indices de la tabla `entregas_tareas`
+--
+ALTER TABLE `entregas_tareas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tarea_user` (`tarea_id`,`user_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indices de la tabla `examenes`
+--
+ALTER TABLE `examenes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `materia_id` (`materia_id`);
+
+--
+-- Indices de la tabla `preguntas_examen`
+--
+ALTER TABLE `preguntas_examen`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `examen_id` (`examen_id`);
+
+--
+-- Indices de la tabla `opciones_pregunta`
+--
+ALTER TABLE `opciones_pregunta`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `pregunta_id` (`pregunta_id`);
+
+--
+-- Indices de la tabla `respuestas_examenes`
+--
+ALTER TABLE `respuestas_examenes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `examen_id` (`examen_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indices de la tabla `respuestas_preguntas`
+--
+ALTER TABLE `respuestas_preguntas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `respuesta_examen_id` (`respuesta_examen_id`),
+  ADD KEY `pregunta_id` (`pregunta_id`);
+
+--
+-- Indices de la tabla `zoom_meetings`
+--
+ALTER TABLE `zoom_meetings`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `materia_id` (`materia_id`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `materias`
+--
+ALTER TABLE `materias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `maestros_materias`
+--
+ALTER TABLE `maestros_materias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `estudiantes_materias`
+--
+ALTER TABLE `estudiantes_materias`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `temas`
+--
+ALTER TABLE `temas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `contenidos`
+--
+ALTER TABLE `contenidos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `tareas`
+--
+ALTER TABLE `tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `entregas_tareas`
+--
+ALTER TABLE `entregas_tareas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `examenes`
+--
+ALTER TABLE `examenes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `preguntas_examen`
+--
+ALTER TABLE `preguntas_examen`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `opciones_pregunta`
+--
+ALTER TABLE `opciones_pregunta`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `respuestas_examenes`
+--
+ALTER TABLE `respuestas_examenes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `respuestas_preguntas`
+--
+ALTER TABLE `respuestas_preguntas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `zoom_meetings`
+--
+ALTER TABLE `zoom_meetings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `maestros_materias`
+--
+ALTER TABLE `maestros_materias`
+  ADD CONSTRAINT `maestros_materias_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `maestros_materias_ibfk_2` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `estudiantes_materias`
+--
+ALTER TABLE `estudiantes_materias`
+  ADD CONSTRAINT `estudiantes_materias_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `estudiantes_materias_ibfk_2` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `temas`
+--
+ALTER TABLE `temas`
+  ADD CONSTRAINT `temas_ibfk_1` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `contenidos`
+--
+ALTER TABLE `contenidos`
+  ADD CONSTRAINT `contenidos_ibfk_1` FOREIGN KEY (`tema_id`) REFERENCES `temas` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `tareas`
+--
+ALTER TABLE `tareas`
+  ADD CONSTRAINT `tareas_ibfk_1` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `entregas_tareas`
+--
+ALTER TABLE `entregas_tareas`
+  ADD CONSTRAINT `entregas_tareas_ibfk_1` FOREIGN KEY (`tarea_id`) REFERENCES `tareas` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `entregas_tareas_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `examenes`
+--
+ALTER TABLE `examenes`
+  ADD CONSTRAINT `examenes_ibfk_1` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `preguntas_examen`
+--
+ALTER TABLE `preguntas_examen`
+  ADD CONSTRAINT `preguntas_examen_ibfk_1` FOREIGN KEY (`examen_id`) REFERENCES `examenes` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `opciones_pregunta`
+--
+ALTER TABLE `opciones_pregunta`
+  ADD CONSTRAINT `opciones_pregunta_ibfk_1` FOREIGN KEY (`pregunta_id`) REFERENCES `preguntas_examen` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `respuestas_examenes`
+--
+ALTER TABLE `respuestas_examenes`
+  ADD CONSTRAINT `respuestas_examenes_ibfk_1` FOREIGN KEY (`examen_id`) REFERENCES `examenes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `respuestas_examenes_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `respuestas_preguntas`
+--
+ALTER TABLE `respuestas_preguntas`
+  ADD CONSTRAINT `respuestas_preguntas_ibfk_1` FOREIGN KEY (`respuesta_examen_id`) REFERENCES `respuestas_examenes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `respuestas_preguntas_ibfk_2` FOREIGN KEY (`pregunta_id`) REFERENCES `preguntas_examen` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `zoom_meetings`
+--
+ALTER TABLE `zoom_meetings`
+  ADD CONSTRAINT `zoom_meetings_ibfk_1` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
 
 COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
