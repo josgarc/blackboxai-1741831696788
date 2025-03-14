@@ -1,0 +1,17 @@
+# Denegar acceso a archivos sensibles
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|htm|shtml|sh|cgi)$">
+    deny from all
+</FilesMatch>
+
+# Permitir acceso a archivos de documentos y multimedia
+<FilesMatch "\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|jpg|jpeg|png|gif|mp4|webm)$">
+    allow from all
+</FilesMatch>
+
+# Prevenir listado de directorios
+Options -Indexes
+
+# Configurar tipos MIME
+AddType application/pdf .pdf
+AddType application/msword .doc
+AddType application/vnd.openxmlformats-officedocument.wordprocessingml.document .docx
